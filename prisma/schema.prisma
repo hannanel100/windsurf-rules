@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// User model for authentication
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  image          String?
+  bio            String?   @db.Text
+  role           UserRole  @default(USER)
+  rules          Rule[]    // Rules created by the user
+  comments       Comment[]
+  votes          Vote[]
+  accounts       Account[]
+  sessions       Session[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+// Rule model for markdown content
+model Rule {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique // URL-friendly version of title
+  content     String     @db.Text // Markdown content
+  description String?    @db.Text
+  status      RuleStatus @default(DRAFT)
+  author      User       @relation(fields: [authorId], references: [id])
+  authorId    String
+  tags        Tag[]
+  framework   String?
+  language    String?
+  comments    Comment[]
+  votes       Vote[]
+  voteCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([framework])
+  @@index([language])
+}
+
+enum RuleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Tags for categorizing rules
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  rules       Rule[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Comments on rules
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  rule      Rule     @relation(fields: [ruleId], references: [id])
+  ruleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ruleId])
+}
+
+// Votes on rules
+model Vote {
+  id        String   @id @default(cuid())
+  value     Int      @default(1) // 1 for upvote, -1 for downvote
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  rule      Rule     @relation(fields: [ruleId], references: [id])
+  ruleId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, ruleId]) // One vote per user per rule
+  @@index([ruleId])
+}
