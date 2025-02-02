@@ -1,50 +1,28 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
+import { useRegister } from "@/hooks/useRegister";
 
-export default function RegisterPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+const RegisterPage = () => {
+  const [error, setError] = useState("");
+  const { mutate, isPending } = useRegister();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const name = formData.get('name') as string;
+    const email = formData.get("email");
+    const password = formData.get("password");
+    const name = formData.get("name");
 
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    mutate(
+      { email, password, name },
+      {
+        onError: (error) => {
+          setError(error.message);
         },
-        body: JSON.stringify({
-          email,
-          password,
-          name,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Something went wrong');
       }
-
-      // Redirect to login page after successful registration
-      router.push('/login?registered=true');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (
@@ -55,7 +33,7 @@ export default function RegisterPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            Or{" "}
             <Link
               href="/login"
               className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -116,14 +94,16 @@ export default function RegisterPage() {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isPending ? "Creating account..." : "Create account"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default RegisterPage;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { QueryClientProviderWrapper } from "@/components/providers/query-client-provider";
 import { NextAuthProvider } from "@/components/providers/next-auth-provider";
 
 const geistSans = Geist({
@@ -20,15 +21,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NextAuthProvider>{children}</NextAuthProvider>
+        <QueryClientProviderWrapper>
+          <NextAuthProvider>{children}</NextAuthProvider>
+        </QueryClientProviderWrapper>
       </body>
     </html>
   );

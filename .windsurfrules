@@ -1,1 +1,2 @@
 when installing or running, use pnpm instead of npm
+in client components, use tanstack query instead of built-in
